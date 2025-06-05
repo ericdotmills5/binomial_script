@@ -73,14 +73,14 @@ def U(S):
     Value paid if issuer excersises (notice cancelation fee).
     U = (K - S)^+ + alpha
     """
-    return max(K - S, 0) + alpha
+    return max(K - S, 0)
 
 def V(S):
     """
     Value paid if holder excersises.
     V = (K - S)^+
     """
-    return max(K - S, 0)
+    return max(K - S, 0) + alpha
     
 
 def fill_S(S: Node, u_count, d_count):
@@ -102,7 +102,7 @@ def compute_X(X: Node, S: Node):
 
     """
     if X.left is None and X.right is None:
-        X.value = U(S.value)
+        X.value = V(S.value)
         X.ex = Exercise.LAMBDA_EXERCISE
 
     elif X.left and X.right:
@@ -147,26 +147,30 @@ def main():
         
     """
     # try a variety of combinations of parameters
-    p_list = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-    N_list = [4, 5, 6, 7, 8, 9, 10]
+    # p_list = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    # N_list = [4, 5, 6, 7, 8, 9, 10]
     u_list = [1.1, 1.2, 1.3, 1.4, 1.5]
     d_list = [0.9, 0.8, 0.7, 0.6, 0.5]
     K_list = [100, 120, 140, 160]
-    alpha_list = [10, 20, 30, 40, 50, 60]
+    alpha_list = [0.001, 0.01, 0.1]
 
-    combinations = list(itertools.product(p_list, N_list, u_list, d_list, K_list, alpha_list))
+    # combinations = list(itertools.product(p_list, N_list, u_list, d_list, K_list, alpha_list))
+    combinations = list(itertools.product(u_list, d_list, K_list, alpha_list))
     random.shuffle(combinations)
     
     global p, N, u, d, S0, K, alpha
 
     i = 0
-    for (p_val, N_val, u_val, d_val, K_val, alpha_val) in combinations:
-        p = p_val
-        N = N_val
+    j = 0
+    # for (p_val, N_val, u_val, d_val, K_val, alpha_val) in combinations:
+    for (u_val, d_val, K_val, alpha_val) in combinations:
+        
+        N = 20 # N_val
         u = u_val
         d = d_val
         K = K_val
-        alpha = alpha_val
+        p = (1 - d_val) / (u_val - d_val) # p_val
+        alpha = alpha_val # alpha_val
 
         S = Node(height=N)
         fill_S(S, 0, 0)
@@ -175,7 +179,8 @@ def main():
         fill_excersise(X, S)
         
         if X.ex == Exercise.NO_EXERCISE:
-            print(f"{X.ex} for parameters (p={p}, N={N}, u={u}, d={d}, K={K}, alpha={alpha})")
+            print(f"{j}th {X.ex} for parameters (p={p}, N={N}, u={u}, d={d}, K={K}, alpha={alpha})")
+            j += 1
         
         i += 1
     
