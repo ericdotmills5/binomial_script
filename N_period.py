@@ -1,4 +1,4 @@
-from enum import Enum
+import pandas as pd
 
 """
 Parameters:
@@ -16,65 +16,16 @@ Returns:
 """
 global p, N, u, d, S0, K, alpha, sheet, sheet_name
 p = 1/2
-N = 10 # try 2000
+N = 12 # try 2000
 u = 1.3
 d = 0.7
 S0 = 100
 K = 140
 alpha = 50
+LAMBDA_EXERCISE = "LD"
+MU_EXERCISE = "MU"
+NO_EXERCISE = "NO"
 
-
-class Exercise(Enum):
-    """
-    Enum for exercise type.
-    """
-    
-    LAMBDA_EXERCISE = 1
-    MU_EXERCISE = 2
-    NO_EXERCISE = 3
-
-
-# class Node:
-#     """
-#     Complete binary tree with defined height with print to spreadsheet functionality.
-#     """
-
-#     def __init__(self, height=0, value=None, left=None, right=None, ):
-#         self.value = value
-#         self.ex = None
-#         self.left = left
-#         self.right = right
-#         self.height = height
-
-#         # initialise all nodes
-#         if height > 0:
-#             self.left = Node(height - 1)
-#             self.right = Node(height - 1)
-    
-#     def __repr__(self):
-#         return f"Node(value={self.value})"
-    
-#     # def print_to_terminal(self, indent=0):
-#     #     """
-#     #     Prints the tree to the terminal in a readable format.
-#     #     """
-#     #     print(" " * indent + str(self.ex))
-#     #     if self.right:
-#     #         self.right.print_to_terminal(indent + 2)
-#     #     if self.left:
-#     #         self.left.print_to_terminal(indent + 2)
-
-#     def print_to_excel(self, sheet, row=0, col=0):
-#         """
-#         Prints the tree to the spreadsheet in a readable format.
-#         """
-#         sheet.cell(row=row, column=col, value=self.value)
-#         sheet.cell(row=row, column=col + 1, value=self.ex.name if self.ex else None)
-        
-#         if self.left:
-#             self.left.print_to_excel(sheet, row + 1, col)
-#         if self.right:
-#             self.right.print_to_excel(sheet, row + 1, col + 2)
 
 class Node:
     """
@@ -96,14 +47,26 @@ class Node:
         self.right_key = (self.lefts, self.rights + 1) if self.depth < N else None
 
     def __repr__(self):
-        return f"Node(key={self.key}, S={self.S}, U={self.U}, V={self.V}, X={self.X}, ex={self.ex.name if self.ex else None}, depth={self.depth})"
-
+        return (
+            f"Node(\n"
+            f"  key = {self.key},\n"
+            f"  S = {self.S},\n"
+            f"  U = {self.U},\n"
+            f"  V = {self.V},\n"
+            f"  X = {self.X},\n"
+            f"  ex = {self.ex},\n"
+            f"  depth = {self.depth}\n"
+            f")"
+        )
+        
+    
 def U(S):
     """
     Value paid if issuer excersises (notice cancelation fee).
     U = (K - S)^+ + alpha
     """
     return max(K - S, 0)
+
 
 def V(S):
     """
@@ -112,64 +75,7 @@ def V(S):
     """
     return max(K - S, 0) + alpha
     
-
-# def fill_S(S: Node, u_count, d_count):
-#     """
-#     Fills S pre order with values of S0 * u^i * d^(N-i) for each node.
-#     """
-#     S.value = S0 * (u ** u_count) * (d ** d_count)
-#     if S.left and S.right:
-#         fill_S(S.left, u_count, d_count + 1)
-#         fill_S(S.right, u_count + 1, d_count)
-
-
-# def compute_X(X: Node, S: Node):
-#     """
-#     Computes value of Xn with Xn+1. 
-#     Base:
-#         XN = UN
-#     Recursive:
-
-#     """
-#     if X.left is None and X.right is None:
-#         X.value = V(S.value)
-#         X.ex = Exercise.LAMBDA_EXERCISE
-
-#     elif X.left and X.right:
-#         E = p * compute_X(X.right, S.right) + (1 - p) * compute_X(X.left, S.left)
-#         Un = U(S.value)
-#         Vn = V(S.value)
-#         if Un <= E and Vn >= E:
-#             X.value = E
-#             X.ex = Exercise.NO_EXERCISE
-#         elif Un > E: # notice issuer takes excerise priority
-#             X.value = Un
-#             X.ex = Exercise.LAMBDA_EXERCISE
-#         elif Vn < E:
-#             X.value = Vn
-#             X.ex = Exercise.MU_EXERCISE
-#         # X.value = (Un if Un > E else 0) + (Vn if Vn < E else 0) + (E if Un <= E and Vn >= E else 0)
-
-#     else:
-#         assert False, "Node must have either 0 or 2 children"
     
-#     return X.value
-
-# def fill_excersise(X: Node, S: Node, excersised: Exercise = Exercise.NO_EXERCISE):
-#     """
-#     Fills excersise pre order with values of exercise type for each node.
-#     """
-#     if X.ex is None:
-#         assert X.ex is not None, "Node must have exercise type"
-#     elif excersised != Exercise.NO_EXERCISE:
-#         X.ex = excersised
-#     elif excersised == Exercise.NO_EXERCISE:
-#         # X.ex = X.ex
-#         pass
-
-#     fill_excersise(X.left, S.left, X.ex) if X.left else None
-#     fill_excersise(X.right, S.right, X.ex) if X.right else None
-
 def fill_SUV(tree: dict, key: tuple):
     """
     Creates node (assumiing it does not exist) 
@@ -190,38 +96,22 @@ def fill_Xex(tree: dict, key: tuple):
     Fills in X and ex values for just this node.
     """
     node = tree.get(key, None)
-    if node is None:
-        assert False, "Node does not exist"
-    
-    if node.X is not None:
-        assert False, "Node already has X value"
     
     # base case
     if node.left_key is None and node.right_key is None:
         node.X = node.V # note this is equivilent to U_N = V_N terminal case
-        node.ex = Exercise.LAMBDA_EXERCISE
+        node.ex = LAMBDA_EXERCISE
         return
     
     # recursive case
     left_node = tree.get(node.left_key, None)
     right_node = tree.get(node.right_key, None)
-
-    if left_node is None or right_node is None:
-        assert False, "Left or right node does not exist"
-
     E = p * right_node.X + (1 - p) * left_node.X
     Un = node.U
     Vn = node.V
-    
-    if Un <= E and Vn >= E:
-        node.X = E
-        node.ex = Exercise.NO_EXERCISE
-    elif Un > E:  # notice issuer takes excerise priority
-        node.X = Un
-        node.ex = Exercise.LAMBDA_EXERCISE
-    elif Vn < E:
-        node.X = Vn
-        node.ex = Exercise.MU_EXERCISE
+
+    node.X = Un if Un > E else Vn if Vn < E else E
+    node.ex = LAMBDA_EXERCISE if Un > E else MU_EXERCISE if Vn < E else NO_EXERCISE
     
     
 def print_tree_to_terminal(tree: dict):
@@ -230,36 +120,41 @@ def print_tree_to_terminal(tree: dict):
     """
     for key, node in tree.items():
         print(f"Key: {key}, S: {node.S}, U: {node.U}, V: {node.V}, X: {node.X}, ex: {node.ex.name if node.ex else None}")
+
+
+def create_df(tree: dict, attr: str) -> pd.DataFrame:
+    """
+    create upper triangle dataframe from the tree
+    of specified attribute (S, U, V, X).
+    """
+    data = []
+    for level in range(N + 1):
+        row = [getattr(tree.get((d, level - d), None), attr, None) for d in range(level, -1, -1)]
+        row.extend([None] * (N - level))
+        data.append(row)
+    return pd.DataFrame(data).T
     
+
 def main():
     """
-        
+    fill out all nodes in level order from leafs to root
+    print data frame
     """
-    # S = Node(height=N)
-    # fill_S(S, 0, 0)
-    # X = Node(height=N)
-    # compute_X(X, S)
-    # fill_excersise(X, S)
-
     tree = {}
-
-    # fill in all S, U, V values in level order from bottom up
-    for level in range(N, -1, -1):
-        for d_count in range(level + 1):
-            u_count = level - d_count
-            key = (d_count, u_count)
-            fill_SUV(tree, key)
-    
-    # print_tree_to_terminal(tree)
-    
-    # fill in all X, ex values in level order from bottom up
-    for level in range(N, -1, -1):
-        for d_count in range(level + 1):
-            u_count = level - d_count
-            key = (d_count, u_count)
-            fill_Xex(tree, key)
-    
-    print(tree.get((0, 0), None))  # print root node
+    keys = [(d_count, level - d_count)
+            for level in range(N, -1, -1)
+            for d_count in range(level + 1)]
+ 
+    for key in keys:
+        fill_SUV(tree, key)
+ 
+    for key in keys:
+        fill_Xex(tree, key)
+ 
+    # print(tree.get((0, 0), None))
+    # print(create_df(tree, 'S'))
+    # print(create_df(tree, 'ex'))
+            
 
 if __name__ == "__main__":
     main()
