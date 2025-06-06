@@ -1,4 +1,6 @@
 import pandas as pd
+import itertools
+import random
 
 """
 Parameters:
@@ -14,17 +16,6 @@ Returns:
     lambda: binary tree of issuer's optimal stopping time
     mu: binary tree of holder's optimal stopping time
 """
-global p, N, u, d, S0, K, alpha, sheet, sheet_name
-p = 1/2
-N = 12 # try 2000
-u = 1.3
-d = 0.7
-S0 = 100
-K = 140
-alpha = 50
-LAMBDA_EXERCISE = "LD"
-MU_EXERCISE = "MU"
-NO_EXERCISE = "NO"
 
 
 class Node:
@@ -100,7 +91,7 @@ def fill_Xex(tree: dict, key: tuple):
     # base case
     if node.left_key is None and node.right_key is None:
         node.X = node.V # note this is equivilent to U_N = V_N terminal case
-        node.ex = LAMBDA_EXERCISE
+        node.ex = LAMBDA_EXERCISE # we pretend U_lambda is excersising
         return
     
     # recursive case
@@ -112,14 +103,6 @@ def fill_Xex(tree: dict, key: tuple):
 
     node.X = Un if Un > E else Vn if Vn < E else E
     node.ex = LAMBDA_EXERCISE if Un > E else MU_EXERCISE if Vn < E else NO_EXERCISE
-    
-    
-def print_tree_to_terminal(tree: dict):
-    """
-    Prints the tree to the terminal in a readable format.
-    """
-    for key, node in tree.items():
-        print(f"Key: {key}, S: {node.S}, U: {node.U}, V: {node.V}, X: {node.X}, ex: {node.ex.name if node.ex else None}")
 
 
 def create_df(tree: dict, attr: str) -> pd.DataFrame:
@@ -154,11 +137,34 @@ def main():
     # print(tree.get((0, 0), None))
     # print(create_df(tree, 'S'))
     # print(create_df(tree, 'ex'))
+    if tree.get((0,0), None).ex == NO_EXERCISE:
+        print(f"u = {u}, d = {d}, K = {K}, alpha = {alpha}")
+        print(create_df(tree, 'ex'), end="\n\n")
             
 
 if __name__ == "__main__":
-    main()
+    u_list = [1.1, 1.2, 1.3, 1.4, 1.5]
+    d_list = [0.9, 0.8, 0.7, 0.6, 0.5]
+    K_list = [100, 120, 140, 160]
+    alpha_list = [10, 20, 30, 40, 50]
+    combinations = list(itertools.product(u_list, d_list, K_list, alpha_list))
+    random.shuffle(combinations)
+
+    global p, N, u, d, S0, K, alpha, sheet, sheet_name
+    p = 1/2
+    N = 10 # try 2000
+    u = 1.3
+    d = 0.7
+    S0 = 100
+    K = 140
+    alpha = 50
+    LAMBDA_EXERCISE = "LD"
+    MU_EXERCISE = "MU"
+    NO_EXERCISE = "NO"
+    for u_val, d_val, K_val, alpha_val in combinations:
+        u = u_val
+        d = d_val
+        K = K_val
+        alpha = alpha_val
+        main()
     
-
-
-
