@@ -14,17 +14,14 @@ Returns:
     lambda: binary tree of issuer's optimal stopping time
     mu: binary tree of holder's optimal stopping time
 """
-import random
-import itertools
-
 global p, N, u, d, S0, K, alpha, sheet, sheet_name
 p = 1/2
-N = 3
-u = 1.1
-d = 0.9
+N = 20
+u = 1.3
+d = 0.7
 S0 = 100
-K = 120
-alpha = 10
+K = 140
+alpha = 50
 
 
 class Exercise(Enum):
@@ -57,15 +54,27 @@ class Node:
     def __repr__(self):
         return f"Node(value={self.value})"
     
-    def print_to_terminal(self, indent=0):
+    # def print_to_terminal(self, indent=0):
+    #     """
+    #     Prints the tree to the terminal in a readable format.
+    #     """
+    #     print(" " * indent + str(self.ex))
+    #     if self.right:
+    #         self.right.print_to_terminal(indent + 2)
+    #     if self.left:
+    #         self.left.print_to_terminal(indent + 2)
+
+    def print_to_excel(self, sheet, row=0, col=0):
         """
-        Prints the tree to the terminal in a readable format.
+        Prints the tree to the spreadsheet in a readable format.
         """
-        print(" " * indent + str(self.ex))
-        if self.right:
-            self.right.print_to_terminal(indent + 2)
+        sheet.cell(row=row, column=col, value=self.value)
+        sheet.cell(row=row, column=col + 1, value=self.ex.name if self.ex else None)
+        
         if self.left:
-            self.left.print_to_terminal(indent + 2)
+            self.left.print_to_excel(sheet, row + 1, col)
+        if self.right:
+            self.right.print_to_excel(sheet, row + 1, col + 2)
 
 
 def U(S):
@@ -146,45 +155,12 @@ def main():
     """
         
     """
-    # try a variety of combinations of parameters
-    # p_list = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-    # N_list = [4, 5, 6, 7, 8, 9, 10]
-    u_list = [1.1, 1.2, 1.3, 1.4, 1.5]
-    d_list = [0.9, 0.8, 0.7, 0.6, 0.5]
-    K_list = [100, 120, 140, 160]
-    alpha_list = [0.001, 0.01, 0.1]
-
-    # combinations = list(itertools.product(p_list, N_list, u_list, d_list, K_list, alpha_list))
-    combinations = list(itertools.product(u_list, d_list, K_list, alpha_list))
-    random.shuffle(combinations)
     
-    global p, N, u, d, S0, K, alpha
-
-    i = 0
-    j = 0
-    # for (p_val, N_val, u_val, d_val, K_val, alpha_val) in combinations:
-    for (u_val, d_val, K_val, alpha_val) in combinations:
-        
-        N = 20 # N_val
-        u = u_val
-        d = d_val
-        K = K_val
-        p = (1 - d_val) / (u_val - d_val) # p_val
-        alpha = alpha_val # alpha_val
-
-        S = Node(height=N)
-        fill_S(S, 0, 0)
-        X = Node(height=N)
-        compute_X(X, S)
-        fill_excersise(X, S)
-        
-        if X.ex == Exercise.NO_EXERCISE:
-            print(f"{j}th {X.ex} for parameters (p={p}, N={N}, u={u}, d={d}, K={K}, alpha={alpha})")
-            j += 1
-        
-        i += 1
-    
-    print(i, "combinations processed.")
+    S = Node(height=N)
+    fill_S(S, 0, 0)
+    X = Node(height=N)
+    compute_X(X, S)
+    fill_excersise(X, S)
         
 
 
