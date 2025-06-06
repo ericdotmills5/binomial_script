@@ -1,6 +1,7 @@
 import pandas as pd
 import itertools
 import random
+import numpy as np
 
 """
 Parameters:
@@ -16,7 +17,6 @@ Returns:
     lambda: binary tree of issuer's optimal stopping time
     mu: binary tree of holder's optimal stopping time
 """
-
 
 class Node:
     """
@@ -103,6 +103,15 @@ def fill_Xex(tree: dict, key: tuple):
 
     node.X = Un if Un > E else Vn if Vn < E else E
     node.ex = LAMBDA_EXERCISE if Un > E else MU_EXERCISE if Vn < E else NO_EXERCISE
+    
+    # temp
+    if Un > E:
+        global LD_count
+        LD_count += 1
+    elif Vn < E:
+        global MU_count
+        MU_count += 1
+    # temp end
 
 
 def create_df(tree: dict, attr: str) -> pd.DataFrame:
@@ -137,16 +146,23 @@ def main():
     # print(tree.get((0, 0), None))
     # print(create_df(tree, 'S'))
     # print(create_df(tree, 'ex'))
-    if tree.get((0,0), None).ex == NO_EXERCISE:
+    global LD_count, MU_count
+    if LD_count > 8 and MU_count > 8:
         print(f"u = {u}, d = {d}, K = {K}, alpha = {alpha}")
+        print(f"LD count = {LD_count}, MU count = {MU_count}")
         print(create_df(tree, 'ex'), end="\n\n")
+
+    #temp
+    
+    LD_count = 0
+    MU_count = 0
             
 
 if __name__ == "__main__":
-    u_list = [1.1, 1.2, 1.3, 1.4, 1.5]
-    d_list = [0.9, 0.8, 0.7, 0.6, 0.5]
-    K_list = [100, 120, 140, 160]
-    alpha_list = [10, 20, 30, 40, 50]
+    u_list = list(np.round(np.arange(1.01, 2.01, 0.01), 2))    # 1.01, 1.02, ..., 1.99, 2.00
+    d_list = list(np.round(np.arange(0.5, 1.0, 0.01), 2))       # 0.50, 0.51, ..., 0.98, 0.99
+    K_list = list(np.arange(101, 201))      # Generates 101, 102, ... up to 200
+    alpha_list = list(np.arange(5, 101))      # Generates 5, 6, 7, ... up to 100
     combinations = list(itertools.product(u_list, d_list, K_list, alpha_list))
     random.shuffle(combinations)
 
@@ -161,6 +177,11 @@ if __name__ == "__main__":
     LAMBDA_EXERCISE = "LD"
     MU_EXERCISE = "MU"
     NO_EXERCISE = "NO"
+
+    global LD_count, MU_count
+    LD_count = 0
+    MU_count = 0
+
     for u_val, d_val, K_val, alpha_val in combinations:
         u = u_val
         d = d_val
